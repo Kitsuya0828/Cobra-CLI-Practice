@@ -8,11 +8,12 @@ import (
 	// "io/ioutil"
 	"os"
 	// "path/filepath"
+	"github.com/manifoldco/promptui"
 	"strings"
 	"time"
 
-	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/spf13/cobra"
 )
 
@@ -60,32 +61,58 @@ to quickly create a Cobra application.`,
 		// CheckArgs("<directory>")
 		// directory := os.Args[1]
 		directory := "."
-	
+
 		// Opens an already existing repository.
 		r, err := git.PlainOpen(directory)
 		CheckIfError(err)
-	
+
 		w, err := r.Worktree()
 		CheckIfError(err)
-	
+
 		// ... we need a file to commit so let's create a new file inside of the
 		// worktree of the project using the go standard library.
 		// Info("echo \"hello world!\" > example-git-file")
 		// filename := filepath.Join(directory, "example-git-file")
 		// err = ioutil.WriteFile(filename, []byte("hello world!"), 0644)
 		// CheckIfError(err)
-	
+
 		// Adds the new files to the staging area.
 		// Info("git add .")
 		// _, err = w.Add("example-git-file")
 		// CheckIfError(err)
-	
+
+		prompt := promptui.Select{
+			Label: "Select a type",
+			Items: []string{
+				"build",
+				"chore",
+				"ci",
+				"docs",
+				"feat",
+				"fix",
+				"perf",
+				"refactor",
+				"revert",
+				"style",
+				"test",
+			},
+		}
+
+		_, result, err := prompt.Run()
+
+		if err != nil {
+			fmt.Printf("Prompt failed %v\n", err)
+			return
+		}
+
+		fmt.Printf("You choose %q\n", result)
+
 		// Commits the current staging area to the repository, with the new file
 		// just created. We should provide the object.Signature of Author of the
 		// commit Since version 5.0.1, we can omit the Author signature, being read
 		// from the git config files.
-		Info("git commit -m \"[add] commit from code\"")
-		commit, err := w.Commit("[add] commit from code", &git.CommitOptions{
+		// Info("git commit -m \"add commit from code\"")
+		commit, err := w.Commit(result + ": commit from code", &git.CommitOptions{
 			Author: &object.Signature{
 				Name:  "Kitsuya0828",
 				Email: "kitsuyaazuma@gmail.com",
