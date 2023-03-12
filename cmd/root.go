@@ -69,13 +69,7 @@ func Warning(format string, args ...interface{}) {
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "gommit",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Provides commit messages for the git commit command in an easy-to-understand, uniform format",
 	Run: func(cmd *cobra.Command, args []string) {
 		// Opens an already existing repository.
 		r, err := git.PlainOpen(".")
@@ -96,13 +90,12 @@ to quickly create a Cobra application.`,
 		}
 		templates := &promptui.SelectTemplates{
 			Label:    "{{ . }}?",
-			Active:   "🚩 {{ .Name | cyan }} ({{ .Emoji }})",
-			Inactive: "  {{ .Name | cyan }} ({{ .Emoji }})",
+			Active:   "{{ .Emoji }} {{ .Name | cyan }}",
+			Inactive: "  {{ .Name | cyan }}",
 			Selected: "Type: {{ .Name | red | cyan }}",
 			Details: `
 --------- Type ----------
 {{ "Name:" | faint }}	{{ .Name }}
-{{ "Emoji:" | faint }}	{{ .Emoji }}
 {{ "Description:" | faint }}	{{ .Description }}`,
 		}
 		searcher := func(input string, index int) bool {
@@ -133,7 +126,7 @@ to quickly create a Cobra application.`,
 			return
 		}
 
-		commitMessage := fmt.Sprintf("%s %s: %s", commitTypes[i].Emoji, commitTypes[i].Name, resultDescription)
+		commitMessage := fmt.Sprintf("%s: %s", commitTypes[i].Name, resultDescription)
 		Info(fmt.Sprintf("git commit -m \"%s\"", commitMessage))
 		commit, err := w.Commit(commitMessage, &git.CommitOptions{})
 		CheckIfError(err)
