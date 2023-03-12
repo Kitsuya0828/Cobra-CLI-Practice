@@ -1,4 +1,4 @@
-module example.com/m
+module github.com/Kitsuya0828/gommit
 
 go 1.19
 
