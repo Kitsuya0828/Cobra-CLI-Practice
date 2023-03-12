@@ -22,16 +22,53 @@ THE SOFTWARE.
 package cmd
 
 import (
+	"fmt"
 	"os"
+	"strings"
 
+	"github.com/go-git/go-git/v5"
+	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 )
 
+type commitType struct {
+	Emoji string
+	Name     string
+	Description  string
+}
 
+// CheckArgs should be used to ensure the right command line arguments are
+// passed before executing an example.
+func CheckArgs(arg ...string) {
+	if len(os.Args) < len(arg)+1 {
+		Warning("Usage: %s %s", os.Args[0], strings.Join(arg, " "))
+		os.Exit(1)
+	}
+}
+
+// CheckIfError should be used to naively panics if an error is not nil.
+func CheckIfError(err error) {
+	if err == nil {
+		return
+	}
+
+	fmt.Printf("\x1b[31;1m%s\x1b[0m\n", fmt.Sprintf("error: %s", err))
+	os.Exit(1)
+}
+
+// Info should be used to describe the example commands that are about to run.
+func Info(format string, args ...interface{}) {
+	fmt.Printf("\x1b[34;1m%s\x1b[0m\n", fmt.Sprintf(format, args...))
+}
+
+// Warning should be used to display a warning
+func Warning(format string, args ...interface{}) {
+	fmt.Printf("\x1b[36;1m%s\x1b[0m\n", fmt.Sprintf(format, args...))
+}
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "m",
+	Use:   "gommit",
 	Short: "A brief description of your application",
 	Long: `A longer description that spans multiple lines and likely contains
 examples and usage of using your application. For example:
@@ -39,13 +76,74 @@ examples and usage of using your application. For example:
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
-	// Run: func(cmd *cobra.Command, args []string) { },
+	Run: func(cmd *cobra.Command, args []string) {
+		// Opens an already existing repository.
+		r, err := git.PlainOpen(".")
+		CheckIfError(err)
+
+		w, err := r.Worktree()
+		CheckIfError(err)
+
+		commitTypes := []commitType{
+			{Emoji: "✨", Name: "feat", Description: "A new feature"},
+			{Emoji: "🐛", Name: "fix", Description: "A bug fix"},
+			{Emoji: "🎨", Name: "style", Description: "Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc)"},
+			{Emoji: "♻", Name: "refactor", Description: "A code change that neither fixes a bug nor adds a feature"},
+			{Emoji: "🐎", Name: "perf", Description: "A code change that improves performance"},
+			{Emoji: "📚", Name: "docs", Description: "Documentation only changes"},
+			{Emoji: "🚨", Name: "test", Description: "Adding missing tests or correcting existing tests"},
+			{Emoji: "⏪", Name: "revert", Description: "Reverts a previous commit"},
+		}
+		templates := &promptui.SelectTemplates{
+			Label:    "{{ . }}?",
+			Active:   "🚩 {{ .Name | cyan }} ({{ .Emoji }})",
+			Inactive: "  {{ .Name | cyan }} ({{ .Emoji }})",
+			Selected: "Type: {{ .Name | red | cyan }}",
+			Details: `
+--------- Type ----------
+{{ "Name:" | faint }}	{{ .Name }}
+{{ "Emoji:" | faint }}	{{ .Emoji }}
+{{ "Description:" | faint }}	{{ .Description }}`,
+		}
+		searcher := func(input string, index int) bool {
+			commitType := commitTypes[index]
+			name := strings.Replace(strings.ToLower(commitType.Name), " ", "", -1)
+			input = strings.Replace(strings.ToLower(input), " ", "", -1)
+	
+			return strings.Contains(name, input)
+		}
+		promptType := promptui.Select{
+			Label: "Select your commit type",
+			Items: commitTypes,
+			Templates: templates,
+			Searcher: searcher,
+		}
+		i, _, err := promptType.Run()
+		if err != nil {
+			fmt.Printf("Prompt failed %v\n", err)
+			return
+		}
+
+		promptDescription := promptui.Prompt{
+			Label:    "Enter a description",
+		}
+		resultDescription, err := promptDescription.Run()
+		if err != nil {
+			fmt.Printf("Prompt failed %v\n", err)
+			return
+		}
+
+		commitMessage := fmt.Sprintf("%s %s: %s", commitTypes[i].Emoji, commitTypes[i].Name, resultDescription)
+		Info(fmt.Sprintf("git commit -m \"%s\"", commitMessage))
+		commit, err := w.Commit(commitMessage, &git.CommitOptions{})
+		CheckIfError(err)
+		obj, err := r.CommitObject(commit)
+		CheckIfError(err)
+
+		fmt.Println(obj)
+	},
 }
 
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	err := rootCmd.Execute()
 	if err != nil {
@@ -54,15 +152,5 @@ func Execute() {
 }
 
 func init() {
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
-
-	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.m.yaml)")
-
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
-
-
