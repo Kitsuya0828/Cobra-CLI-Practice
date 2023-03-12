@@ -10,10 +10,8 @@ import (
 	// "path/filepath"
 	"github.com/manifoldco/promptui"
 	"strings"
-	"time"
 
 	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/spf13/cobra"
 )
 
@@ -57,11 +55,7 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("commit called")
-		// CheckArgs("<directory>")
-		// directory := os.Args[1]
 		directory := "."
-
 		// Opens an already existing repository.
 		r, err := git.PlainOpen(directory)
 		CheckIfError(err)
@@ -81,45 +75,53 @@ to quickly create a Cobra application.`,
 		// _, err = w.Add("example-git-file")
 		// CheckIfError(err)
 
-		prompt := promptui.Select{
-			Label: "Select a type",
+		promptType := promptui.Select{
+			Label: "Select your commit type",
 			Items: []string{
-				"📚 docs",
 				"✨ feat",
 				"🐛 fix",
-				"🐎 perf",
-				"♻️ refactor",
-				"⏪ revert",
 				"🎨 style",
+				"♻️ refactor",
+				"🐎 perf",
+				"📚 docs",
 				"🚨 test",
+				"⏪ revert",
 			},
 		}
-
-		_, result, err := prompt.Run()
-
+		_, resultType, err := promptType.Run()
 		if err != nil {
 			fmt.Printf("Prompt failed %v\n", err)
 			return
 		}
 
-		fmt.Printf("You choose %q\n", result)
+		promptDescription := promptui.Prompt{
+			Label:    "Enter a description",
+		}
+		resultDescription, err := promptDescription.Run()
+		if err != nil {
+			fmt.Printf("Prompt failed %v\n", err)
+			return
+		}
+	
 
 		// Commits the current staging area to the repository, with the new file
 		// just created. We should provide the object.Signature of Author of the
 		// commit Since version 5.0.1, we can omit the Author signature, being read
 		// from the git config files.
-		// Info("git commit -m \"add commit from code\"")
-		commit, err := w.Commit(result + ": commit from code", &git.CommitOptions{
-			Author: &object.Signature{
-				Name:  "Kitsuya0828",
-				Email: "kitsuyaazuma@gmail.com",
-				When:  time.Now(),
-			},
+		commitMessage := fmt.Sprintf("%s: %s", resultType, resultDescription)
+		Info(fmt.Sprintf("git commit -m \"%s\"", commitMessage))
+		commit, err := w.Commit(commitMessage,
+		&git.CommitOptions{
+			// Author: &object.Signature{
+			// 	Name:  "Kitsuya0828",
+			// 	Email: "kitsuyaazuma@gmail.com",
+			// 	When:  time.Now(),
+			// },
 		})
 
 		CheckIfError(err)
 		// Prints the current HEAD to verify that all worked well.
-		Info("git show -s")
+		// Info("git show -s")
 		obj, err := r.CommitObject(commit)
 		CheckIfError(err)
 
