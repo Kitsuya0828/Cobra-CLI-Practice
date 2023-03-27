@@ -2,6 +2,8 @@
 
 A CLI tool that provides commit messages for the git commit command in an easy-to-understand, uniform format.
 
+Just use `gommit` instead of `git commit -m`.
+
 https://user-images.githubusercontent.com/60843722/227822377-6fe091c6-d9de-4c98-8994-3557078934e1.mov
 
 
