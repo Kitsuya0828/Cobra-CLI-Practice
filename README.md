@@ -2,6 +2,8 @@
 
 A CLI tool that provides commit messages for the git commit command in an easy-to-understand, uniform format.
 
+Here comes a sample movie.
+
 ```zsh
 # Install
 go install github.com/Kitsuya0828/gommit
